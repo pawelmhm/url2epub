@@ -40,11 +40,11 @@ package_opf = """<?xml version="1.0" encoding="utf-8" standalone="no"?>
 	unique-identifier="pub-identifier">
 	<metadata>
 		<dc:identifier id="pub-identifier">urn:isbn:9781449328030</dc:identifier>
-		<dc:title id="pub-title">My first ebook</dc:title>
+		<dc:title id="pub-title">{title}</dc:title>
 		<dc:language id="pub-language">en</dc:language>
-		<dc:date>2012-02-20</dc:date>
-		<meta property="dcterms:modified">2012-10-24T15:30:00Z</meta>
-		<dc:creator id="pub-creator12">Pawel Miech</dc:creator>
+		<dc:date>{date}</dc:date>
+		<meta property="dcterms:modified">{date}</meta>
+		<dc:creator id="pub-creator12">{creator}</dc:creator>
 	</metadata>
 	<manifest>
 		<item id="htmltoc" properties="nav" media-type="application/xhtml+xml" href="navs.xhtml"/>
@@ -62,10 +62,10 @@ nav = """<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" xml:lang="en"
 	lang="en">
 	<head>
-		<title>Hello world</title>
+		<title>Hacker News Content</title>
 	</head>
 	<body>
-		<h1>Hello world</h1>
+		<h1>Hacker News</h1>
 		<nav epub:type="toc" id="toc">
 			<h2>Table of Contents</h2>
 			<ol id='content_list'>
@@ -75,8 +75,10 @@ nav = """<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 </html>"""
 
 import zipfile
+import os
 from lxml import etree, html
 import hashlib
+from datetime import datetime
 
 class EpubWriter(object):
     def prepare_navs(self, html_docs):
@@ -94,7 +96,11 @@ class EpubWriter(object):
         return etree.tostring(navs, pretty_print=True)
 
     def prepare_package(self, html_docs):
-        pack = etree.fromstring(package_opf)
+        date = datetime.now().isoformat()
+        title = "Hacker News at {}".format(date)
+        creator = " ".join(os.uname()[:2])
+        package = package_opf.format(title=title, date=date, creator=creator)
+        pack = etree.fromstring(package)
         for doc in html_docs:
             # write each one to xml
             id_id = "id-id{0}".format(doc)
