@@ -4,7 +4,10 @@ from twisted.internet import reactor
 from twisted.internet.defer import DeferredList, inlineCallbacks, Deferred
 from twisted.internet.protocol import ProcessProtocol
 from twisted.python import log
+from twisted.internet import protocol, utils, reactor
 import json
+
+from epub_writer import EpubWriter
 
 class EpubConvert(ProcessProtocol):
     data = ""
@@ -14,10 +17,11 @@ class EpubConvert(ProcessProtocol):
 
     def connectionMade(self):
         self.transport.writeToChild(0, self.html)
-        self.transport.closeChildFD(0)
+        self.transport.closeStdin()
 
     def outReceived(self, data):
         log.msg("receiving data")
+        # self.transport.write(data)
         self.data += data
 
     def errReceived(self, data):
@@ -33,83 +37,67 @@ class EpubConvert(ProcessProtocol):
 class NewsGetter(object):
     def main(self):
         url = "https://hacker-news.firebaseio.com/v0/topstories.json"
-        dfd = self.request_get(url)
+        dfd = request_get(url, load_json=True)
         dfd.addCallback(self.parse_stories)
         dfd.addErrback(self.log_error)
         return dfd
 
-    @inlineCallbacks
     def parse_stories(self, stories):
         log.msg("parsing stories")
         url = 'https://hacker-news.firebaseio.com/v0/item/{0}.json'
         req_list = []
 
-        for id_ in stories[:5]:
-            req = self.request_get(url.format(id_))
+        for id_ in stories[:10]:
+            req = request_get(url.format(id_), load_json=True)
             req.addCallback(self.follow_link)
             req_list.append(req)
-            yield req
-            break
 
         dfd_list = DeferredList(req_list)
         dfd_list.addCallback(self.return_all)
-        yield dfd_list
+        return dfd_list
 
-    @inlineCallbacks
     def follow_link(self, response):
         url = response.get("url")
         url = str(url)
-        dfd = self.request_get(url)
-        dfd.addCallback(self.save_response)
-        yield dfd
-
-    def save_response(self, response):
-        dfd = response.content()
-        dfd.addCallback(self.print_html)
+        dfd = request_get(url)
+        dfd.addCallback(self.add_metadata, response)
         return dfd
+
+    def add_metadata(self, response, api_response):
+        html_docs = {
+            "id": api_response.get("id"),
+            "title": api_response.get("title"),
+            "score": api_response.get("score"),
+            "response": response
+        }
+        return html_docs
 
     def return_all(self, responses):
-        pass
-
-    def done(self, response):
-        dfd = response.content()
-        dfd.addCallback(self.print_response)
-        dfd.addErrback(self.return_html, response)
-        return dfd
-
-    def print_response(self, response):
-        return json.loads(response)
-
-    @inlineCallbacks
-    def print_html(self, response):
-        epub_convert = EpubConvert(response)
-        epub_convert.deferred = Deferred()
-        epub_convert.deferred.addBoth(self.finish_all)
-        # log.msg("first x chars of response %s" % response[:100])
-        reactor.spawnProcess(epub_convert, 'pandoc',
-                             ['pandoc', '-f','html', '-o','some_file.epub'])
-        yield epub_convert.deferred
-
-    def finish_all(self, data):
-        log.msg("ending_process")
-        with open('local.epub','w') as f:
-            f.write(data)
+        htmls = [tup[1] for tup in responses]
+        writer = EpubWriter()
+        writer.write_epub(htmls)
         reactor.stop()
-
-    def return_html(self, exception, response):
-        return response
-
-    def request_get(self, url):
-        log.msg("sending request to url %s" % url)
-        dfd = get(url)
-        dfd.addCallback(self.done)
-        return dfd
 
     def log_error(self, exception):
         log.err(exception)
 
-if __name__ == "__main__":
 
+def request_get(url, load_json=False):
+    log.msg("sending request to url %s" % url)
+    dfd = get(url)
+
+    def done(response):
+        dfd = response.content()
+        if load_json:
+            print_response = lambda res: json.loads(res)
+            dfd.addCallback(print_response)
+        return dfd
+
+    dfd.addCallback(done)
+    return dfd
+
+
+if __name__ == "__main__":
     log.startLogging(sys.stdout)
     api = NewsGetter()
     api.main()
