@@ -111,6 +111,11 @@ class EpubWriter(object):
                     item.set("id", id_id)
                     item.set("media-type", "application/xhtml+xml")
                     elem.append(item)
+                    item = etree.Element('link')
+                    item.set('media-type', 'text/css')
+                    item.set("id",'css{}'.format(doc))
+                    item.set("href", 'css/{}'.format(doc))
+                    elem.append(item)
                 elif elem.tag == "{http://www.idpf.org/2007/opf}spine":
                     itemref = etree.Element('itemref')
                     itemref.set('idref', id_id)
@@ -126,11 +131,21 @@ class EpubWriter(object):
         _html_docs = {}
         for doc in html_docs:
             sel = html.document_fromstring(doc.get("response"))
+            for elem in sel.iter():
+                if elem.tag == 'script':
+                    elem.getparent().remove(elem)
+
             doc_content = "".join(sel.xpath(".//text()"))
             doc_ascii = doc_content.encode('ascii','ignore')
             id_ = hashlib.sha224(doc_ascii).hexdigest()
             title = doc.get("title")
-            _html_docs[id_] = (title, doc.get("response"))
+            head = sel.xpath("//head")[0]
+            elem = etree.Element('link')
+            elem.set("rel", "stylesheet")
+            elem.set("href", '/css/{}'.format(id_))
+            head.append(elem)
+            response = etree.tostring(sel)
+            _html_docs[id_] = (title, response, doc.get("stylesheets"))
 
         return _html_docs
 
@@ -148,6 +163,7 @@ class EpubWriter(object):
             f.writestr('EPUB/navs.xhtml', nav)
             for doc in html_docs:
                 f.writestr('EPUB/{0}'.format(doc), html_docs[doc][1])
+                f.writestr('EPUB/css/{}'.format(doc), html_docs[doc][2])
 
 
 if __name__ == "__main__":
