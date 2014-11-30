@@ -18,6 +18,7 @@ class WebpageGetter(object):
     def download(self, *args, **kwargs):
         req = request_get(self.url)
         req.addCallback(self.parse_stylesheets)
+        req.addErrback(self.handle_error)
         return req
 
     def parse_stylesheets(self, response):

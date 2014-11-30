@@ -34,7 +34,7 @@ container = """
 </container>
 """
 
-package_opf = """<?xml version="1.0" encoding="utf-8" standalone="no"?>
+package_root = """<?xml version="1.0" encoding="utf-8" standalone="no"?>
 <package xmlns="http://www.idpf.org/2007/opf" xmlns:dc="http://purl.org/dc/elements/1.1/"
 	xmlns:dcterms="http://purl.org/dc/terms/" version="3.0" xml:lang="en"
 	unique-identifier="pub-identifier">
@@ -46,13 +46,17 @@ package_opf = """<?xml version="1.0" encoding="utf-8" standalone="no"?>
 		<meta property="dcterms:modified">{date}</meta>
 		<dc:creator id="pub-creator12">{creator}</dc:creator>
 	</metadata>
+</package>
+"""
+package_manifest = """
 	<manifest>
 		<item id="htmltoc" properties="nav" media-type="application/xhtml+xml" href="navs.xhtml"/>
 	</manifest>
+"""
+package_spine = """
     <spine>
 		<itemref idref="htmltoc" linear="yes"/>
     </spine>
-</package>
 """
 
 mimetype = "application/epub+zip"
