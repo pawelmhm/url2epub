@@ -79,6 +79,7 @@ import os
 from lxml import etree, html
 import hashlib
 from datetime import datetime
+from twisted.internet import reactor
 
 class EpubWriter(object):
     def prepare_navs(self, html_docs):
@@ -111,10 +112,10 @@ class EpubWriter(object):
                     item.set("id", id_id)
                     item.set("media-type", "application/xhtml+xml")
                     elem.append(item)
-                    item = etree.Element('link')
+                    item = etree.Element('item')
                     item.set('media-type', 'text/css')
-                    item.set("id",'css{}'.format(doc))
-                    item.set("href", 'css/{}'.format(doc))
+                    item.set("id", "id-{}".format(self.css_id(doc)))
+                    item.set("href", 'css/{}'.format(self.css_id(doc)))
                     elem.append(item)
                 elif elem.tag == "{http://www.idpf.org/2007/opf}spine":
                     itemref = etree.Element('itemref')
@@ -141,12 +142,18 @@ class EpubWriter(object):
             head = sel.xpath("//head")[0]
             elem = etree.Element('link')
             elem.set("rel", "stylesheet")
-            elem.set("href", '/css/{}'.format(id_))
+            elem.set("href", 'css/{}'.format(self.css_id(id_)))
+            elem.set("type", "text/css")
             head.append(elem)
             response = etree.tostring(sel)
             _html_docs[id_] = (title, response, doc.get("stylesheets"))
 
         return _html_docs
+
+    def css_id(self, id_):
+        css_id = "css" + id_
+        id_ = hashlib.sha224(css_id).hexdigest()
+        return id_
 
     def write_epub(self, html_docs):
         """html_docs - list of dictionaries with following keys:
@@ -162,7 +169,8 @@ class EpubWriter(object):
             f.writestr('EPUB/navs.xhtml', nav)
             for doc in html_docs:
                 f.writestr('EPUB/{0}'.format(doc), html_docs[doc][1])
-                f.writestr('EPUB/css/{}'.format(doc), html_docs[doc][2])
+                f.writestr('EPUB/css/{}'.format(self.css_id(doc)), html_docs[doc][2])
+        reactor.stop()
 
 
 if __name__ == "__main__":
