@@ -121,7 +121,6 @@ class EpubWriter(object):
                     itemref.set('idref', id_id)
                     elem.append(itemref)
         pack = etree.tostring(pack)
-        print pack
         return pack
 
     def prepare_titles(self, html_docs):
@@ -151,7 +150,7 @@ class EpubWriter(object):
 
     def write_epub(self, html_docs):
         """html_docs - list of dictionaries with following keys:
-        title, id, score, content, url
+        title, responses (html), stylesheets
         """
         html_docs = self.prepare_titles(html_docs)
         nav = self.prepare_navs(html_docs)

@@ -1,5 +1,4 @@
 from treq import get
-
 from twisted.python import log
 
 def request_get(url, load_json=False):

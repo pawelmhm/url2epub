@@ -1,3 +1,4 @@
+from urlparse import urljoin
 import sys
 from epub_writer import EpubWriter
 from helpers import request_get
@@ -10,7 +11,7 @@ from twisted.internet import protocol, utils, reactor
 from twisted.internet.defer import DeferredList, inlineCallbacks, Deferred
 
 
-class EpubSpider(object):
+class WebpageGetter(object):
     def __init__(self, url):
         self.url = url
 
@@ -24,7 +25,9 @@ class EpubSpider(object):
         stylesheets = response_html.xpath("//link[@rel='stylesheet']/@href")
         dfd_list = []
         for sheet in stylesheets:
+            sheet_url = urljoin(self.url, sheet)
             req = request_get(sheet)
+            req.addErrback(self.handle_error)
             dfd_list.append(req)
 
         dfd_list = DeferredList(dfd_list)
@@ -41,8 +44,27 @@ class EpubSpider(object):
             "stylesheets": styles
         }
         ]
-        writer = EpubWriter()
-        writer.write_epub(htmls)
+        return htmls
+
+    def handle_error(self, failure):
+        log.err(failure)
+
+class SerialDownloader(object):
+    def __init__(self, urls):
+        self.urls = urls
+
+    def download_urls(self):
+        dfd_list = []
+        for url in self.urls:
+            getter = WebpageGetter(url)
+            dfd = getter.download()
+            dfd_list.append(dfd)
+
+        dfd_list = DeferredList(dfd_list)
+        dfd_list.addCallback(self.write_epub)
+
+    def write_epub(self, responses):
+        pass
 
 
 def main():
@@ -52,10 +74,13 @@ def main():
     if not args:
         parser.error("url must be supplied")
 
-    # log.startLogging(sys.stdout)
-    url = args[0]
-    spider = EpubSpider(url)
-    spider.download()
+    log.startLogging(sys.stdout)
+    urls = args[0]
+    urls = ["http://wp.pl", "http://google.com"]
+    serial = SerialDownloader(urls)
+    serial.download_urls()
+    # webpageGetter = WebpageGetter(url)
+    # webpageGetter.download()
     reactor.run()
 
 if __name__ == "__main__":
