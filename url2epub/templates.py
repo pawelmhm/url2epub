@@ -72,8 +72,7 @@ nav = """<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 		<h1>Hacker News</h1>
 		<nav epub:type="toc" id="toc">
 			<h2>Table of Contents</h2>
-			<ol id='content_list'>
-			</ol>
+            {}
 		</nav>
 	</body>
 </html>"""

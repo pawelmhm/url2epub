@@ -42,37 +42,34 @@ class PackageOpf(object):
         self.root.append(self.spine)
         return etree.tostring(self.root)
 
+class Navs(object):
+    def __init__(self):
+        self.template = nav
+        self.ol = etree.Element("ol")
+
+    def add_item_to_nav(self, item):
+        li = etree.Element("li")
+        a = etree.Element("a")
+        a.set("href", item["attrs"]["href"])
+        a.text = item["title"]
+        li.append(a)
+        self.ol.append(li)
+
+    def __str__(self):
+        return self.template.format(etree.tostring(self.ol))
 
 class EpubWriter(object):
-    def prepare_navs(self, html_docs):
-        navs = etree.fromstring(nav)
-        for doc in html_docs:
-            for elem in navs.iter():
-                if elem.attrib.get("id") == "content_list":
-                    li = etree.Element('li')
-                    a = etree.Element('a')
-                    a.text = doc["title"]
-                    a.set("href", doc["attrs"]["href"])
-                    li.append(a)
-                    elem.append(li)
-
-        return etree.tostring(navs, pretty_print=True)
-
-    def prepare_package(self, html_docs):
-        date = datetime.now().isoformat()
-        title = "Hacker News at {}".format(date)
-        creator = " ".join(os.uname()[:2])
-        pack = PackageOpf(title, date, creator)
-
-        for doc in html_docs:
-            pack.add_item_to_package(doc["attrs"])
-            for style in doc["stylesheets"]:
-                pack.add_item_to_manifest(style["attrs"])
-        return pack.generate_package()
+    def write_epub(self, html_docs):
+        """html_docs - list of dictionaries with following keys:
+        title, responses (html), stylesheets
+        """
+        html_docs = self.prepare_titles(html_docs)
+        nav = self.prepare_navs(html_docs)
+        package_opf = self.prepare_package(html_docs)
+        self._write_epub(package_opf, nav, html_docs)
 
     def prepare_titles(self, html_docs):
         """
-        :return dict with hash of contents as key,
         """
         _html_docs = []
         for doc in html_docs:
@@ -114,19 +111,24 @@ class EpubWriter(object):
 
         return _html_docs
 
-    def css_id(self, id_):
-        css_id = "css" + id_
-        id_ = hashlib.sha224(css_id).hexdigest()
-        return id_
+    def prepare_navs(self, html_docs):
+        navs = Navs()
+        for doc in html_docs:
+            navs.add_item_to_nav(doc)
 
-    def write_epub(self, html_docs):
-        """html_docs - list of dictionaries with following keys:
-        title, responses (html), stylesheets
-        """
-        html_docs = self.prepare_titles(html_docs)
-        package_opf = self.prepare_package(html_docs)
-        nav = self.prepare_navs(html_docs)
-        self._write_epub(package_opf, nav, html_docs)
+        return str(navs)
+
+    def prepare_package(self, html_docs):
+        date = datetime.now().isoformat()
+        title = "Hacker News at {}".format(date)
+        creator = " ".join(os.uname()[:2])
+        pack = PackageOpf(title, date, creator)
+
+        for doc in html_docs:
+            pack.add_item_to_package(doc["attrs"])
+            for style in doc["stylesheets"]:
+                pack.add_item_to_manifest(style["attrs"])
+        return pack.generate_package()
 
     def _write_epub(self, package, nav, html_docs):
         with zipfile.ZipFile('example/example.epub','w') as f:
