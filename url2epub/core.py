@@ -26,7 +26,7 @@ class WebpageGetter(object):
         dfd_list = []
         for sheet in stylesheets:
             sheet_url = urljoin(self.url, sheet)
-            req = request_get(sheet)
+            req = request_get(sheet_url)
             req.addErrback(self.handle_error)
             dfd_list.append(req)
 
@@ -44,7 +44,8 @@ class WebpageGetter(object):
             "stylesheets": styles
         }
         ]
-        return htmls
+        writer = EpubWriter()
+        writer.write_epub(htmls)
 
     def handle_error(self, failure):
         log.err(failure)
@@ -75,12 +76,11 @@ def main():
         parser.error("url must be supplied")
 
     log.startLogging(sys.stdout)
-    urls = args[0]
-    urls = ["http://wp.pl", "http://google.com"]
-    serial = SerialDownloader(urls)
-    serial.download_urls()
-    # webpageGetter = WebpageGetter(url)
-    # webpageGetter.download()
+    url = args[0]
+    # serial = SerialDownloader(urls)
+    # serial.download_urls()
+    webpageGetter = WebpageGetter(url)
+    webpageGetter.download()
     reactor.run()
 
 if __name__ == "__main__":
