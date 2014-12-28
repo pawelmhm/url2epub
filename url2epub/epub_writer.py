@@ -14,6 +14,7 @@ class PackageOpf(object):
     def __init__(self, title, date, creator):
         self.manifest = etree.fromstring(package_manifest)
         self.spine = etree.fromstring(package_spine)
+        title = title.encode("ascii", errors="ignore")
         self.root = etree.fromstring(package_root.format(title=title,
                                              date=date,
                                              creator=creator))
