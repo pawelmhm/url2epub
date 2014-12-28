@@ -1,4 +1,4 @@
-from urlparse import urljoin
+from urlparse import urljoin, urlparse
 import sys
 from epub_writer import EpubWriter
 from helpers import request_get
@@ -38,9 +38,23 @@ class WebpageGetter(object):
     def stylesheets_done(self, styles, response):
         styles = [stl[1] for stl in styles]
         styles = "\n".join(styles)
-        # TODO add stylesheet to HEAD here
+        title_xpath  = """
+            //title//text()
+                |
+            //h1//text()
+                |
+            //h2//text()
+        """
+        sel = html.fromstring(response)
+        title = sel.xpath(title_xpath)
+        if title:
+            title = title[0]
+        else:
+            title = urlparse(self.url).netloc
+            title = title.replace("www.", "")
+        title = "".join(title)
         htmls = [{
-            "title": "foo bar",
+            "title": title,
             "response": response,
             "stylesheets": styles
         }

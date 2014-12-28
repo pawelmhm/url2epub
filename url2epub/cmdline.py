@@ -12,7 +12,7 @@ def execute():
     if not args:
         parser.error("url must be supplied")
 
-    log.startLogging(sys.stdout)
+    # log.startLogging(sys.stdout)
     url = args[0]
     # serial = SerialDownloader(urls)
     # serial.download_urls()

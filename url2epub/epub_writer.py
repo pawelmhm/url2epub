@@ -120,7 +120,7 @@ class EpubWriter(object):
 
     def prepare_package(self, html_docs):
         date = datetime.now().isoformat()
-        title = "Hacker News at {}".format(date)
+        title = html_docs[0]["title"]
         creator = " ".join(os.uname()[:2])
         pack = PackageOpf(title, date, creator)
 
@@ -131,7 +131,9 @@ class EpubWriter(object):
         return pack.generate_package()
 
     def _write_epub(self, package, nav, html_docs):
-        with zipfile.ZipFile('example/example.epub','w') as f:
+        title = html_docs[0]["title"]
+        title = title.replace(" ", "_").lower()
+        with zipfile.ZipFile('%s.epub' % title,'w') as f:
             f.writestr('mimetype', mimetype)
             f.writestr('EPUB/package.opf', package.strip())
             f.writestr('META-INF/container.xml', container.strip())

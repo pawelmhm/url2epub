@@ -66,10 +66,9 @@ nav = """<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" xml:lang="en"
 	lang="en">
 	<head>
-		<title>Hacker News Content</title>
+		<title>Table of Contents</title>
 	</head>
 	<body>
-		<h1>Hacker News</h1>
 		<nav epub:type="toc" id="toc">
 			<h2>Table of Contents</h2>
             {}
