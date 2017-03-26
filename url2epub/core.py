@@ -53,14 +53,14 @@ class WebpageGetter(object):
             title = urlparse(self.url).netloc
             title = title.replace("www.", "")
         title = "".join(title)
-        htmls = [{
+        html_dict = {
             "title": title,
             "response": response,
             "stylesheets": styles
         }
-        ]
+
         writer = EpubWriter()
-        writer.write_epub(htmls)
+        writer.write_epub(html_dict)
 
     def handle_error(self, failure):
         log.err(failure)

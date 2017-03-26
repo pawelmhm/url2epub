@@ -1,3 +1,4 @@
 lxml
 twisted
 treq
+EbookLib==0.15
